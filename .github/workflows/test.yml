@@ -1,0 +1,44 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  formula:
+    name: Formula (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: Homebrew/actions/setup-homebrew@main
+      - id: present
+        run: echo "formula=$(test -f Formula/astrolabe.rb && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: ${{ steps.present.outputs.formula == 'true' }}
+        run: |
+          brew style --formula mercurian-labs/tap/astrolabe
+          brew audit --formula mercurian-labs/tap/astrolabe
+          brew install --formula mercurian-labs/tap/astrolabe
+          brew test mercurian-labs/tap/astrolabe
+          alab --version
+
+  cask:
+    name: Cask
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: Homebrew/actions/setup-homebrew@main
+      - id: present
+        run: echo "cask=$(test -f Casks/astrolabe.rb && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: ${{ steps.present.outputs.cask == 'true' }}
+        run: |
+          brew style --cask mercurian-labs/tap/astrolabe
+          brew audit --cask mercurian-labs/tap/astrolabe
+          brew install --cask mercurian-labs/tap/astrolabe
+          brew uninstall --cask mercurian-labs/tap/astrolabe
